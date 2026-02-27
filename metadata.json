@@ -1,0 +1,5 @@
+{
+  "name": "Spirit Island Spirit Picker",
+  "description": "A random spirit selector for the board game Spirit Island with difficulty and expansion filters.",
+  "requestFramePermissions": []
+}
