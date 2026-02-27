@@ -322,6 +322,12 @@ const SPIRITS: Spirit[] = [
 const EXPANSIONS = ['Base Game', 'Branch & Claw', 'Jagged Earth', 'Horizons', 'Nature Incarnate']
 
 const DIFFICULTIES: Difficulty[] = ['Easy', 'Moderate', 'Hard', 'Very Hard']
+const DIFFICULTY_SORT_ORDER: Record<Difficulty, number> = {
+    Easy: 0,
+    Moderate: 1,
+    Hard: 2,
+    'Very Hard': 3
+}
 
 const ADVERSARIES: Adversary[] = [
     { id: 'a1', name: 'Brandenburg-Prussia', expansion: 'Base Game', difficultyRange: '1-10' },
@@ -364,6 +370,10 @@ export default function App() {
     const [selectedAspect, setSelectedAspect] = useState<string | null>(null)
     const [pickedAdversary, setPickedAdversary] = useState<Adversary | null>(null)
     const [showModal, setShowModal] = useState(false)
+    const [showSpiritHistoryModal, setShowSpiritHistoryModal] = useState(false)
+    const [spiritsSort, setSpiritsSort] = useState<
+        'name-asc' | 'name-desc' | 'difficulty-asc' | 'difficulty-desc'
+    >('name-asc')
     const [gameStep, setGameStep] = useState(1)
     const [gameTeamName, setGameTeamName] = useState('')
     const [gameBoardSide, setGameBoardSide] = useState<BoardSide>('Balanced')
@@ -495,6 +505,30 @@ export default function App() {
     const filteredAdversaries = useMemo(() => {
         return ADVERSARIES.filter((a) => selectedExpansions.includes(a.expansion))
     }, [selectedExpansions])
+
+    const sortedFilteredSpirits = useMemo(() => {
+        const items = [...filteredSpirits]
+        const isDifficultySort = spiritsSort.startsWith('difficulty')
+        const isAsc = spiritsSort.endsWith('asc')
+        items.sort((a, b) => {
+            if (isDifficultySort) {
+                const orderDiff = DIFFICULTY_SORT_ORDER[a.difficulty] - DIFFICULTY_SORT_ORDER[b.difficulty]
+                if (orderDiff !== 0) {
+                    return isAsc ? orderDiff : -orderDiff
+                }
+                const nameDiff = a.name.localeCompare(b.name)
+                return isAsc ? nameDiff : -nameDiff
+            }
+
+            const nameDiff = a.name.localeCompare(b.name)
+            if (nameDiff !== 0) {
+                return isAsc ? nameDiff : -nameDiff
+            }
+            const orderDiff = DIFFICULTY_SORT_ORDER[a.difficulty] - DIFFICULTY_SORT_ORDER[b.difficulty]
+            return isAsc ? orderDiff : -orderDiff
+        })
+        return items
+    }, [filteredSpirits, spiritsSort])
 
     const gameSpiritPickerTakenByOthers = useMemo(() => {
         const currentPlayer = gameSpiritPickerPlayer ?? gameCurrentPlayer
@@ -1279,19 +1313,14 @@ export default function App() {
                     initial={{ opacity: 0, y: -20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className='text-4xl md:text-5xl font-bold tracking-tight text-primary mb-3'>
-                    Spirit Island Spirit Picker
+                    Spirit Island Game Companion
                 </motion.h1>
                 <motion.p
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: 0.2 }}
                     className='text-slate-400 text-lg'>
-                    {activeTab === 'spirits' &&
-                        'Filter by difficulty and expansion, then draw a Spirit at random.'}
-                    {activeTab === 'adversary' &&
-                        'Pick a random Adversary. Expansion filters are shared with Spirit picks.'}
-                    {activeTab === 'games' &&
-                        'Manage saved games, start a new setup, and score completed games.'}
+                    Where storms whisper, roots awaken, and legends gather at your table.
                 </motion.p>
             </header>
 
@@ -1383,8 +1412,13 @@ export default function App() {
                                 disabled={filteredSpirits.length === 0}
                                 className='w-full md:w-auto px-16 py-6 bg-primary hover:bg-blue-500 text-white rounded-2xl text-2xl font-bold shadow-[0_0_30px_rgba(19,146,236,0.3)] transition-all flex items-center justify-center gap-3 mx-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100'>
                                 <Sparkles size={28} />
-                                Pick a Spirit
+                                Draw a Spirit
                             </motion.button>
+                            <button
+                                onClick={() => setShowSpiritHistoryModal(true)}
+                                className='mt-3 text-sm text-slate-400 hover:text-primary underline underline-offset-4 transition-colors'>
+                                Display draw history
+                            </button>
                             {filteredSpirits.length === 0 && (
                                 <p className='mt-4 text-rose-400 text-sm'>
                                     Please select at least one expansion and difficulty.
@@ -1392,73 +1426,56 @@ export default function App() {
                             )}
                         </div>
 
-                        {/* History Section */}
-                        <section className='space-y-6'>
-                            <div className='flex justify-between items-center px-2'>
-                                <h2 className='text-xl font-bold flex items-center gap-2 text-slate-100'>
-                                    <History className='text-primary' size={20} />
-                                    History
-                                </h2>
-                                <button
-                                    onClick={clearHistory}
-                                    className='text-slate-500 hover:text-rose-400 text-xs uppercase tracking-widest font-bold transition-colors'>
-                                    Clear History
-                                </button>
-                            </div>
+                        {/* Spirit List */}
+                        <section className='space-y-4'>
+                            <div className='glass-panel p-5 rounded-2xl border border-slate-700/60 space-y-4'>
+                                <div className='flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3'>
+                                    <h2 className='text-lg font-bold text-slate-100'>Spirit List</h2>
+                                    <div className='flex items-center gap-2'>
+                                        <select
+                                            value={spiritsSort}
+                                            onChange={(e) =>
+                                                setSpiritsSort(
+                                                    e.target.value as
+                                                        | 'name-asc'
+                                                        | 'name-desc'
+                                                        | 'difficulty-asc'
+                                                        | 'difficulty-desc'
+                                                )
+                                            }
+                                            className='bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-100'>
+                                            <option value='name-asc'>Name A-Z</option>
+                                            <option value='name-desc'>Name Z-A</option>
+                                            <option value='difficulty-asc'>Difficulty ↑</option>
+                                            <option value='difficulty-desc'>Difficulty ↓</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <p className='text-sm text-slate-400'>
+                                    {sortedFilteredSpirits.length} spirits match current filters.
+                                </p>
 
-                            <div className='space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-2'>
-                                <AnimatePresence initial={false}>
-                                    {history.length > 0 ? (
-                                        history.map((item) => (
-                                            <motion.div
-                                                key={item.entryId}
-                                                initial={{ opacity: 0, x: -20 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                exit={{ opacity: 0, x: 20 }}
-                                                className='glass-panel p-4 rounded-xl flex items-center gap-4 group hover:border-primary/30 transition-colors'>
-                                                <div className='w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border border-slate-700 shadow-inner'>
-                                                    <img
-                                                        src={item.image}
-                                                        alt={item.name}
-                                                        className='w-full h-full object-cover'
-                                                        referrerPolicy='no-referrer'
+                                <div className='max-h-[70vh] overflow-y-auto pr-2 custom-scrollbar'>
+                                    {sortedFilteredSpirits.length > 0 ? (
+                                        <div className='grid grid-cols-1 lg:grid-cols-2 gap-5'>
+                                            {sortedFilteredSpirits.map((spirit) => (
+                                                <div
+                                                    key={spirit.id}
+                                                    className='rounded-2xl border border-slate-700/70 overflow-hidden bg-slate-900/40'>
+                                                    <SpiritDisplayCard
+                                                        spirit={spirit}
+                                                        selectedAspect={null}
+                                                        titleSize='small'
                                                     />
                                                 </div>
-                                                <div className='flex-grow'>
-                                                    <div className='flex justify-between items-start'>
-                                                        <h4 className='font-bold text-slate-100 group-hover:text-primary transition-colors'>
-                                                            {item.name}
-                                                        </h4>
-                                                        <span className='text-[10px] text-slate-500 uppercase font-mono bg-slate-800 px-2 py-0.5 rounded'>
-                                                            {item.timestamp}
-                                                        </span>
-                                                    </div>
-                                                    <div className='flex items-center gap-2 mt-1.5'>
-                                                        <span className='text-[10px] text-primary font-bold uppercase tracking-wider'>
-                                                            {item.difficulty}
-                                                        </span>
-                                                        <span className='text-[10px] text-slate-600'>
-                                                            •
-                                                        </span>
-                                                        <span className='text-[10px] text-slate-400 font-medium'>
-                                                            {item.expansion}
-                                                        </span>
-                                                    </div>
-                                                    <p className='mt-1 text-[10px] text-slate-500'>
-                                                        Aspect: {item.selectedAspect ?? 'No Aspect'}
-                                                    </p>
-                                                </div>
-                                            </motion.div>
-                                        ))
+                                            ))}
+                                        </div>
                                     ) : (
-                                        <motion.p
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className='text-slate-600 text-center py-12 italic border-2 border-dashed border-slate-800 rounded-2xl'>
-                                            Your journey&apos;s history will appear here...
-                                        </motion.p>
+                                        <p className='text-slate-500 text-center py-8 border border-dashed border-slate-700 rounded-xl'>
+                                            No spirits match current filters.
+                                        </p>
                                     )}
-                                </AnimatePresence>
+                                </div>
                             </div>
                         </section>
                     </>
@@ -2492,6 +2509,78 @@ export default function App() {
                     </div>
                 </div>
             </nav>
+
+            {/* Spirit History Modal */}
+            <ModalShell
+                open={showSpiritHistoryModal}
+                onClose={() => setShowSpiritHistoryModal(false)}
+                maxWidthClass='max-w-3xl'>
+                <div className='p-6 space-y-4'>
+                    <div className='flex items-center gap-5 px-1'>
+                        <h3 className='text-xl font-bold flex items-center gap-2 text-slate-100'>
+                            <History className='text-primary' size={20} />
+                            Spirit Draw History
+                        </h3>
+                        <button
+                            onClick={clearHistory}
+                            className='text-slate-500 hover:text-rose-400 text-xs uppercase tracking-widest font-bold transition-colors'>
+                            Clear History
+                        </button>
+                    </div>
+                    <div className='space-y-3 max-h-[65vh] overflow-y-auto custom-scrollbar pr-2'>
+                        <AnimatePresence initial={false}>
+                            {history.length > 0 ? (
+                                history.map((item) => (
+                                    <motion.div
+                                        key={item.entryId}
+                                        initial={{ opacity: 0, x: -20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: 20 }}
+                                        className='glass-panel p-4 rounded-xl flex items-center gap-4 group hover:border-primary/30 transition-colors'>
+                                        <div className='w-14 h-14 rounded-full overflow-hidden flex-shrink-0 border border-slate-700 shadow-inner'>
+                                            <img
+                                                src={item.image}
+                                                alt={item.name}
+                                                className='w-full h-full object-cover'
+                                                referrerPolicy='no-referrer'
+                                            />
+                                        </div>
+                                        <div className='flex-grow'>
+                                            <div className='flex justify-between items-start gap-3'>
+                                                <h4 className='font-bold text-slate-100 group-hover:text-primary transition-colors'>
+                                                    {item.name}
+                                                </h4>
+                                                <span className='text-[10px] text-slate-500 uppercase font-mono bg-slate-800 px-2 py-0.5 rounded whitespace-nowrap'>
+                                                    {item.timestamp}
+                                                </span>
+                                            </div>
+                                            <div className='flex items-center gap-2 mt-1.5'>
+                                                <span className='text-[10px] text-primary font-bold uppercase tracking-wider'>
+                                                    {item.difficulty}
+                                                </span>
+                                                <span className='text-[10px] text-slate-600'>•</span>
+                                                <span className='text-[10px] text-slate-400 font-medium'>
+                                                    {item.expansion}
+                                                </span>
+                                            </div>
+                                            <p className='mt-1 text-[10px] text-slate-500'>
+                                                Aspect: {item.selectedAspect ?? 'No Aspect'}
+                                            </p>
+                                        </div>
+                                    </motion.div>
+                                ))
+                            ) : (
+                                <motion.p
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    className='text-slate-600 text-center py-12 italic border-2 border-dashed border-slate-800 rounded-2xl'>
+                                    Your journey&apos;s history will appear here...
+                                </motion.p>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </ModalShell>
 
             {/* Spirit Result Modal */}
             <ModalShell open={showModal && !!pickedSpirit} onClose={() => setShowModal(false)} maxWidthClass='max-w-lg'>

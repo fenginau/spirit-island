@@ -9,6 +9,7 @@ interface SpiritDisplayCardProps {
     confirmLabel?: string
     compact?: boolean
     footerText?: string
+    titleSize?: 'default' | 'small'
 }
 
 export default function SpiritDisplayCard({
@@ -19,7 +20,8 @@ export default function SpiritDisplayCard({
     confirmDisabled = false,
     confirmLabel = 'Confirm Selection',
     compact = false,
-    footerText
+    footerText,
+    titleSize = 'default'
 }: SpiritDisplayCardProps) {
     if (compact) {
         return (
@@ -64,7 +66,10 @@ export default function SpiritDisplayCard({
                     </span>
                 </div>
 
-                <h2 className='text-4xl md:text-5xl font-bold leading-tight text-white tracking-tight'>
+                <h2
+                    className={`font-bold leading-tight text-white tracking-tight ${
+                        titleSize === 'small' ? 'text-2xl md:text-3xl' : 'text-4xl md:text-5xl'
+                    }`}>
                     {spirit.name}
                 </h2>
 
