@@ -37,6 +37,16 @@ import ScoreBadge from './components/ScoreBadge'
 const GOOGLE_AI_API_KEY = 'AIzaSyDIrZfjGbBmDVjuEi-5MI5zaEdkV5gfLtc'
 const getDefaultPlayerName = (player: number) => `Player ${player}`
 const getBoardDifficultyModifier = (boardSide: BoardSide) => (boardSide === 'Thematic' ? 3 : 0)
+const SPIRIT_WIKI_FILE_PATH_BASE = 'https://spiritislandwiki.com/index.php?title=Special:FilePath/'
+const PLAY_CARD_EXTENSIONS = ['jpg', 'png', 'jpeg', 'webp'] as const
+
+const getSpiritPlayCardCandidates = (spiritName: string, side: 'Front' | 'Back') =>
+    PLAY_CARD_EXTENSIONS.map(
+        (ext) =>
+            `${SPIRIT_WIKI_FILE_PATH_BASE}${encodeURIComponent(
+                `${spiritName} Spirit Panel ${side}.${ext}`
+            )}`
+    )
 
 // --- Data ---
 const SPIRIT_ASPECTS: Record<string, string[]> = {
@@ -371,6 +381,10 @@ export default function App() {
     const [pickedAdversary, setPickedAdversary] = useState<Adversary | null>(null)
     const [showModal, setShowModal] = useState(false)
     const [showSpiritHistoryModal, setShowSpiritHistoryModal] = useState(false)
+    const [playCardSpirit, setPlayCardSpirit] = useState<SpiritWithAspects | null>(null)
+    const [isPlayCardFlipped, setIsPlayCardFlipped] = useState(false)
+    const [playCardFrontUrlIndex, setPlayCardFrontUrlIndex] = useState(0)
+    const [playCardBackUrlIndex, setPlayCardBackUrlIndex] = useState(0)
     const [spiritsSort, setSpiritsSort] = useState<
         'name-asc' | 'name-desc' | 'difficulty-asc' | 'difficulty-desc'
     >('name-asc')
@@ -549,6 +563,19 @@ export default function App() {
         })
     }, [filteredSpirits, gameSpiritSearch])
 
+    const playCardFrontCandidates = useMemo(
+        () => (playCardSpirit ? getSpiritPlayCardCandidates(playCardSpirit.name, 'Front') : []),
+        [playCardSpirit]
+    )
+
+    const playCardBackCandidates = useMemo(
+        () => (playCardSpirit ? getSpiritPlayCardCandidates(playCardSpirit.name, 'Back') : []),
+        [playCardSpirit]
+    )
+
+    const playCardFrontUrl = playCardFrontCandidates[playCardFrontUrlIndex] ?? null
+    const playCardBackUrl = playCardBackCandidates[playCardBackUrlIndex] ?? null
+
     const toggleDifficulty = (diff: Difficulty) => {
         setSelectedDifficulties((prev) =>
             prev.includes(diff) ? prev.filter((d) => d !== diff) : [...prev, diff]
@@ -584,6 +611,18 @@ export default function App() {
             selectedAspect: null
         }
         setHistory((prev) => [newEntry, ...prev].slice(0, 20))
+    }
+
+    const openSpiritPlayCardModal = (spirit: SpiritWithAspects) => {
+        setPlayCardSpirit(spirit)
+        setIsPlayCardFlipped(false)
+        setPlayCardFrontUrlIndex(0)
+        setPlayCardBackUrlIndex(0)
+    }
+
+    const closeSpiritPlayCardModal = () => {
+        setPlayCardSpirit(null)
+        setIsPlayCardFlipped(false)
     }
 
     const updateSelectedAspect = (aspect: string | null) => {
@@ -1466,6 +1505,8 @@ export default function App() {
                                                         spirit={spirit}
                                                         selectedAspect={null}
                                                         titleSize='small'
+                                                        showViewPlayCard
+                                                        onViewPlayCard={() => openSpiritPlayCardModal(spirit)}
                                                     />
                                                 </div>
                                             ))}
@@ -2593,6 +2634,78 @@ export default function App() {
                         confirmLabel='Confirm Selection'
                         footerText={`Selected: ${selectedAspect ?? 'No Aspect'}`}
                     />
+                )}
+            </ModalShell>
+
+            {/* Spirit Play Card Modal */}
+            <ModalShell
+                open={!!playCardSpirit}
+                onClose={closeSpiritPlayCardModal}
+                maxWidthClass='max-w-3xl'>
+                {playCardSpirit && (
+                    <div className='p-6 md:p-8 space-y-5'>
+                        <div className='pr-12'>
+                            <h2 className='text-xl md:text-2xl font-bold text-white'>{playCardSpirit.name}</h2>
+                            <p className='text-sm text-slate-400 mt-1'>
+                                Click the card to flip between front and back.
+                            </p>
+                        </div>
+                        <div className='mx-auto w-full max-w-md [perspective:1400px]'>
+                            <button
+                                type='button'
+                                onClick={() => setIsPlayCardFlipped((prev) => !prev)}
+                                className='w-full cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70'>
+                                <div
+                                    className='relative aspect-[3/4] w-full transition-transform duration-700 [transform-style:preserve-3d]'
+                                    style={{
+                                        transform: isPlayCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
+                                    }}>
+                                    <div className='absolute inset-0 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 [backface-visibility:hidden]'>
+                                        {playCardFrontUrl ? (
+                                            <img
+                                                src={playCardFrontUrl}
+                                                alt={`${playCardSpirit.name} play card front`}
+                                                className='h-full w-full object-contain bg-slate-950'
+                                                referrerPolicy='no-referrer'
+                                                onError={() =>
+                                                    setPlayCardFrontUrlIndex((current) =>
+                                                        current < playCardFrontCandidates.length - 1
+                                                            ? current + 1
+                                                            : current
+                                                    )
+                                                }
+                                            />
+                                        ) : (
+                                            <div className='h-full grid place-items-center text-sm text-slate-400 px-6 text-center'>
+                                                Unable to load front side.
+                                            </div>
+                                        )}
+                                    </div>
+                                    <div className='absolute inset-0 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 [backface-visibility:hidden] [transform:rotateY(180deg)]'>
+                                        {playCardBackUrl ? (
+                                            <img
+                                                src={playCardBackUrl}
+                                                alt={`${playCardSpirit.name} play card back`}
+                                                className='h-full w-full object-contain bg-slate-950'
+                                                referrerPolicy='no-referrer'
+                                                onError={() =>
+                                                    setPlayCardBackUrlIndex((current) =>
+                                                        current < playCardBackCandidates.length - 1
+                                                            ? current + 1
+                                                            : current
+                                                    )
+                                                }
+                                            />
+                                        ) : (
+                                            <div className='h-full grid place-items-center text-sm text-slate-400 px-6 text-center'>
+                                                Unable to load back side.
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </button>
+                        </div>
+                    </div>
                 )}
             </ModalShell>
 

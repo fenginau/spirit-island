@@ -1,4 +1,5 @@
 import type { SpiritWithAspects } from '../types'
+import { Eye } from 'lucide-react'
 
 interface SpiritDisplayCardProps {
     spirit: SpiritWithAspects
@@ -10,6 +11,8 @@ interface SpiritDisplayCardProps {
     compact?: boolean
     footerText?: string
     titleSize?: 'default' | 'small'
+    onViewPlayCard?: () => void
+    showViewPlayCard?: boolean
 }
 
 export default function SpiritDisplayCard({
@@ -21,7 +24,9 @@ export default function SpiritDisplayCard({
     confirmLabel = 'Confirm Selection',
     compact = false,
     footerText,
-    titleSize = 'default'
+    titleSize = 'default',
+    onViewPlayCard,
+    showViewPlayCard = false
 }: SpiritDisplayCardProps) {
     if (compact) {
         return (
@@ -54,6 +59,15 @@ export default function SpiritDisplayCard({
                     referrerPolicy='no-referrer'
                 />
                 <div className='absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent' />
+                {showViewPlayCard && onViewPlayCard && (
+                    <button
+                        onClick={onViewPlayCard}
+                        className='absolute top-4 right-4 z-10 p-2 bg-slate-900/85 rounded-full text-white hover:bg-primary transition-colors border border-white/20'
+                        aria-label={`View ${spirit.name} play card`}
+                        title='View play card'>
+                        <Eye size={18} />
+                    </button>
+                )}
             </div>
 
             <div className='p-8 space-y-6'>
