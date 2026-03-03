@@ -62,7 +62,7 @@ export default function SpiritDisplayCard({
                 {showViewPlayCard && onViewPlayCard && (
                     <button
                         onClick={onViewPlayCard}
-                        className='absolute top-4 right-4 z-10 p-2 bg-slate-900/85 rounded-full text-white hover:bg-primary transition-colors border border-white/20'
+                        className='absolute top-4 left-4 z-10 p-2 bg-slate-900/85 rounded-full text-white hover:bg-primary transition-colors border border-white/20'
                         aria-label={`View ${spirit.name} play card`}
                         title='View play card'>
                         <Eye size={18} />

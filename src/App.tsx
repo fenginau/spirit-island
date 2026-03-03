@@ -37,16 +37,138 @@ import ScoreBadge from './components/ScoreBadge'
 const GOOGLE_AI_API_KEY = 'AIzaSyDIrZfjGbBmDVjuEi-5MI5zaEdkV5gfLtc'
 const getDefaultPlayerName = (player: number) => `Player ${player}`
 const getBoardDifficultyModifier = (boardSide: BoardSide) => (boardSide === 'Thematic' ? 3 : 0)
-const SPIRIT_WIKI_FILE_PATH_BASE = 'https://spiritislandwiki.com/index.php?title=Special:FilePath/'
-const PLAY_CARD_EXTENSIONS = ['jpg', 'png', 'jpeg', 'webp'] as const
+const LOCAL_PLAY_CARDS_BY_SPIRIT: Record<string, { front: string; back: string }> = {
+    'Thunderspeaker': { front: '/play-cards/vassal/1sp1.jpg', back: '/play-cards/vassal/1sp2.jpg' },
+    "Ocean's Hungry Grasp": { front: '/play-cards/vassal/2sp1.jpg', back: '/play-cards/vassal/2sp2.jpg' },
+    'Vital Strength of the Earth': { front: '/play-cards/vassal/3sp1.jpg', back: '/play-cards/vassal/3sp2.jpg' },
+    'Bringer of Dreams and Nightmares': {
+        front: '/play-cards/vassal/4sp1.jpg',
+        back: '/play-cards/vassal/4sp2.jpg'
+    },
+    'Heart of the Wildfire': { front: '/play-cards/vassal/5sp1.jpg', back: '/play-cards/vassal/5sp2.jpg' },
+    'Keeper of the Forbidden Wilds': {
+        front: '/play-cards/vassal/6sp1.jpg',
+        back: '/play-cards/vassal/6sp2.jpg'
+    },
+    "Lightning's Swift Strike": { front: '/play-cards/vassal/7sp1.jpg', back: '/play-cards/vassal/7sp2.jpg' },
+    'A Spread of Rampant Green': { front: '/play-cards/vassal/8sp1.jpg', back: '/play-cards/vassal/8sp2.jpg' },
+    'Shadows Flicker Like Flame': { front: '/play-cards/vassal/9sp1.jpg', back: '/play-cards/vassal/9sp2.jpg' },
+    'River Surges in Sunlight': { front: '/play-cards/vassal/10sp1.jpg', back: '/play-cards/vassal/10sp2.jpg' },
+    'Sharp Fangs Behind the Leaves': {
+        front: '/play-cards/vassal/11sp1.jpg',
+        back: '/play-cards/vassal/11sp2.jpg'
+    },
+    'Serpent Slumbering Beneath the Island': {
+        front: '/play-cards/vassal/12sp1.jpg',
+        back: '/play-cards/vassal/12sp2.jpg'
+    },
+    'Downpour Drenches the World': {
+        front: '/play-cards/vassal/downpour-front.jpg',
+        back: '/play-cards/vassal/downpour-back.jpg'
+    },
+    'Finder of Paths Unseen': {
+        front: '/play-cards/vassal/finder-front.jpg',
+        back: '/play-cards/vassal/finder-back.jpg'
+    },
+    'Lure of the Deep Wilderness': {
+        front: '/play-cards/vassal/lure-front.jpg',
+        back: '/play-cards/vassal/lure-back.jpg'
+    },
+    'Many Minds Move as One': {
+        front: '/play-cards/vassal/many-minds-front.jpg',
+        back: '/play-cards/vassal/many-minds-back.jpg'
+    },
+    'Shifting Memory of Ages': {
+        front: '/play-cards/vassal/shifting-front.jpg',
+        back: '/play-cards/vassal/shifting-back.jpg'
+    },
+    'Shroud of Silent Mist': {
+        front: '/play-cards/vassal/shroud-front.jpg',
+        back: '/play-cards/vassal/shroud-back.jpg'
+    },
+    "Stone's Unyielding Defiance": {
+        front: '/play-cards/vassal/stones-front.jpg',
+        back: '/play-cards/vassal/stones-back.jpg'
+    },
+    'Volcano Looming High': {
+        front: '/play-cards/vassal/volcano-front.jpg',
+        back: '/play-cards/vassal/volcano-back.jpg'
+    },
+    'Vengeance as a Burning Plague': {
+        front: '/play-cards/vassal/vengeance-front.jpg',
+        back: '/play-cards/vassal/vengeance-back.jpg'
+    },
+    'Starlight Seeks Its Form': {
+        front: '/play-cards/vassal/starlight-front.jpg',
+        back: '/play-cards/vassal/starlight-back.jpg'
+    },
+    'Fractured Days Split the Sky': {
+        front: '/play-cards/vassal/shattered-days-front.jpg',
+        back: '/play-cards/vassal/shattered-days-back.jpg'
+    },
+    'Grinning Trickster Stirs Up Trouble': {
+        front: '/play-cards/vassal/trickster-front.jpg',
+        back: '/play-cards/vassal/trickster-back.jpg'
+    },
+    'Devouring Teeth Lurk Underfoot': {
+        front: '/play-cards/tts/devouring-teeth-lurk-underfoot-front.jpg',
+        back: '/play-cards/tts/devouring-teeth-lurk-underfoot-back.jpg'
+    },
+    'Eyes Watch from the Trees': {
+        front: '/play-cards/tts/eyes-watch-from-the-trees-front.jpg',
+        back: '/play-cards/tts/eyes-watch-from-the-trees-back.jpg'
+    },
+    'Fathomless Mud of the Swamp': {
+        front: '/play-cards/tts/fathomless-mud-of-the-swamp-front.jpg',
+        back: '/play-cards/tts/fathomless-mud-of-the-swamp-back.jpg'
+    },
+    'Rising Heat of Stone and Sand': {
+        front: '/play-cards/tts/rising-heat-of-stone-and-sand-front.jpg',
+        back: '/play-cards/tts/rising-heat-of-stone-and-sand-back.jpg'
+    },
+    'Sun-Bright Whirlwind': {
+        front: '/play-cards/tts/sun-bright-whirlwind-front.jpg',
+        back: '/play-cards/tts/sun-bright-whirlwind-back.jpg'
+    },
+    'Ember-Eyed Behemoth': {
+        front: '/play-cards/tts/ember-eyed-behemoth-front.jpg',
+        back: '/play-cards/tts/ember-eyed-behemoth-back.jpg'
+    },
+    'Hearth-Vigil': {
+        front: '/play-cards/tts/hearth-vigil-front.jpg',
+        back: '/play-cards/tts/hearth-vigil-back.jpg'
+    },
+    'Towering Roots of the Jungle': {
+        front: '/play-cards/tts/towering-roots-of-the-jungle-front.jpg',
+        back: '/play-cards/tts/towering-roots-of-the-jungle-back.jpg'
+    },
+    'Breath of Darkness Down Your Spine': {
+        front: '/play-cards/tts/breath-of-darkness-down-your-spine-front.jpg',
+        back: '/play-cards/tts/breath-of-darkness-down-your-spine-back.jpg'
+    },
+    'Relentless Gaze of the Sun': {
+        front: '/play-cards/tts/relentless-gaze-of-the-sun-front.jpg',
+        back: '/play-cards/tts/relentless-gaze-of-the-sun-back.jpg'
+    },
+    'Wandering Voice Keens Delirium': {
+        front: '/play-cards/tts/wandering-voice-keens-delirium-front.jpg',
+        back: '/play-cards/tts/wandering-voice-keens-delirium-back.jpg'
+    },
+    'Wounded Waters Bleeding': {
+        front: '/play-cards/tts/wounded-waters-bleeding-front.jpg',
+        back: '/play-cards/tts/wounded-waters-bleeding-back.jpg'
+    },
+    'Dances Up Earthquakes': {
+        front: '/play-cards/tts/dances-up-earthquakes-front.jpg',
+        back: '/play-cards/tts/dances-up-earthquakes-back.jpg'
+    }
+}
 
-const getSpiritPlayCardCandidates = (spiritName: string, side: 'Front' | 'Back') =>
-    PLAY_CARD_EXTENSIONS.map(
-        (ext) =>
-            `${SPIRIT_WIKI_FILE_PATH_BASE}${encodeURIComponent(
-                `${spiritName} Spirit Panel ${side}.${ext}`
-            )}`
-    )
+const getSpiritPlayCardCandidates = (spiritName: string, side: 'Front' | 'Back') => {
+    const entry = LOCAL_PLAY_CARDS_BY_SPIRIT[spiritName]
+    if (!entry) return []
+    return [side === 'Front' ? entry.front : entry.back]
+}
 
 // --- Data ---
 const SPIRIT_ASPECTS: Record<string, string[]> = {
@@ -575,6 +697,8 @@ export default function App() {
 
     const playCardFrontUrl = playCardFrontCandidates[playCardFrontUrlIndex] ?? null
     const playCardBackUrl = playCardBackCandidates[playCardBackUrlIndex] ?? null
+    const hasLocalPlayCardForSpirit = (spirit: SpiritWithAspects) =>
+        Boolean(LOCAL_PLAY_CARDS_BY_SPIRIT[spirit.name])
 
     const toggleDifficulty = (diff: Difficulty) => {
         setSelectedDifficulties((prev) =>
@@ -615,7 +739,7 @@ export default function App() {
 
     const openSpiritPlayCardModal = (spirit: SpiritWithAspects) => {
         setPlayCardSpirit(spirit)
-        setIsPlayCardFlipped(false)
+        setIsPlayCardFlipped(true)
         setPlayCardFrontUrlIndex(0)
         setPlayCardBackUrlIndex(0)
     }
@@ -1505,7 +1629,7 @@ export default function App() {
                                                         spirit={spirit}
                                                         selectedAspect={null}
                                                         titleSize='small'
-                                                        showViewPlayCard
+                                                        showViewPlayCard={hasLocalPlayCardForSpirit(spirit)}
                                                         onViewPlayCard={() => openSpiritPlayCardModal(spirit)}
                                                     />
                                                 </div>
@@ -1864,11 +1988,21 @@ export default function App() {
                                                 )}
                                             </div>
                                             {selection.spirit ? (
-                                                <SpiritDisplayCard
-                                                    spirit={selection.spirit}
-                                                    selectedAspect={selection.aspect}
-                                                    compact
-                                                />
+                                                <button
+                                                    type='button'
+                                                    onClick={() => {
+                                                        if (hasLocalPlayCardForSpirit(selection.spirit!)) {
+                                                            openSpiritPlayCardModal(selection.spirit!)
+                                                        }
+                                                    }}
+                                                    disabled={!hasLocalPlayCardForSpirit(selection.spirit)}
+                                                    className='w-full text-left enabled:cursor-pointer disabled:cursor-default'>
+                                                    <SpiritDisplayCard
+                                                        spirit={selection.spirit}
+                                                        selectedAspect={selection.aspect}
+                                                        compact
+                                                    />
+                                                </button>
                                             ) : (
                                                 <p className='text-sm text-slate-500 italic'>Not selected</p>
                                             )}
@@ -2629,6 +2763,8 @@ export default function App() {
                     <SpiritDisplayCard
                         spirit={pickedSpirit}
                         selectedAspect={selectedAspect}
+                        showViewPlayCard={hasLocalPlayCardForSpirit(pickedSpirit)}
+                        onViewPlayCard={() => openSpiritPlayCardModal(pickedSpirit)}
                         onSelectAspect={updateSelectedAspect}
                         onConfirm={() => setShowModal(false)}
                         confirmLabel='Confirm Selection'
@@ -2641,7 +2777,8 @@ export default function App() {
             <ModalShell
                 open={!!playCardSpirit}
                 onClose={closeSpiritPlayCardModal}
-                maxWidthClass='max-w-3xl'>
+                maxWidthClass='max-w-6xl'
+                zIndexClass='z-[70]'>
                 {playCardSpirit && (
                     <div className='p-6 md:p-8 space-y-5'>
                         <div className='pr-12'>
@@ -2650,22 +2787,22 @@ export default function App() {
                                 Click the card to flip between front and back.
                             </p>
                         </div>
-                        <div className='mx-auto w-full max-w-md [perspective:1400px]'>
+                        <div className='mx-auto w-full max-w-5xl [perspective:1400px]'>
                             <button
                                 type='button'
                                 onClick={() => setIsPlayCardFlipped((prev) => !prev)}
                                 className='w-full cursor-pointer rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70'>
                                 <div
-                                    className='relative aspect-[3/4] w-full transition-transform duration-700 [transform-style:preserve-3d]'
+                                    className='relative aspect-[1349/870] w-full transition-transform duration-700 [transform-style:preserve-3d]'
                                     style={{
                                         transform: isPlayCardFlipped ? 'rotateY(180deg)' : 'rotateY(0deg)'
                                     }}>
-                                    <div className='absolute inset-0 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 [backface-visibility:hidden]'>
+                                    <div className='absolute inset-0 rounded-2xl overflow-hidden [backface-visibility:hidden]'>
                                         {playCardFrontUrl ? (
                                             <img
                                                 src={playCardFrontUrl}
                                                 alt={`${playCardSpirit.name} play card front`}
-                                                className='h-full w-full object-contain bg-slate-950'
+                                                className='h-full w-full object-contain'
                                                 referrerPolicy='no-referrer'
                                                 onError={() =>
                                                     setPlayCardFrontUrlIndex((current) =>
@@ -2681,12 +2818,12 @@ export default function App() {
                                             </div>
                                         )}
                                     </div>
-                                    <div className='absolute inset-0 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950 [backface-visibility:hidden] [transform:rotateY(180deg)]'>
+                                    <div className='absolute inset-0 rounded-2xl overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)]'>
                                         {playCardBackUrl ? (
                                             <img
                                                 src={playCardBackUrl}
                                                 alt={`${playCardSpirit.name} play card back`}
-                                                className='h-full w-full object-contain bg-slate-950'
+                                                className='h-full w-full object-contain'
                                                 referrerPolicy='no-referrer'
                                                 onError={() =>
                                                     setPlayCardBackUrlIndex((current) =>
@@ -2737,6 +2874,8 @@ export default function App() {
                                                     [candidate.id]: aspect
                                                 }))
                                             }
+                                            showViewPlayCard={hasLocalPlayCardForSpirit(candidate)}
+                                            onViewPlayCard={() => openSpiritPlayCardModal(candidate)}
                                             onConfirm={() => confirmGameCandidateSelection(candidate)}
                                             confirmLabel='Confirm This Spirit'
                                             footerText={`Selected: ${gameCandidateAspects[candidate.id] ?? 'No Aspect'}`}
@@ -2886,6 +3025,8 @@ export default function App() {
                                                     [spirit.id]: aspect
                                                 }))
                                             }
+                                            showViewPlayCard={hasLocalPlayCardForSpirit(spirit)}
+                                            onViewPlayCard={() => openSpiritPlayCardModal(spirit)}
                                             onConfirm={() => confirmGameSpiritPickerSelection(spirit)}
                                             confirmDisabled={isPickedByAnotherPlayer}
                                             confirmLabel={isPickedByAnotherPlayer ? 'Picked' : 'Confirm This Spirit'}

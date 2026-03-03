@@ -7,18 +7,20 @@ interface ModalShellProps {
     onClose: () => void
     children: ReactNode
     maxWidthClass?: string
+    zIndexClass?: string
 }
 
 export default function ModalShell({
     open,
     onClose,
     children,
-    maxWidthClass = 'max-w-5xl'
+    maxWidthClass = 'max-w-5xl',
+    zIndexClass = 'z-50'
 }: ModalShellProps) {
     return (
         <AnimatePresence>
             {open && (
-                <div className='fixed inset-0 z-50 flex items-center justify-center p-4'>
+                <div className={`fixed inset-0 ${zIndexClass} flex items-center justify-center p-4`}>
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
