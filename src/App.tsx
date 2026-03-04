@@ -33,6 +33,7 @@ import type {
 import ModalShell from './components/ModalShell'
 import SpiritDisplayCard from './components/SpiritDisplayCard'
 import ScoreBadge from './components/ScoreBadge'
+import { LOCAL_UNIQUE_POWER_CARDS_BY_SPIRIT } from './data/uniquePowerCards'
 
 const GOOGLE_AI_API_KEY = 'AIzaSyDIrZfjGbBmDVjuEi-5MI5zaEdkV5gfLtc'
 const getDefaultPlayerName = (player: number) => `Player ${player}`
@@ -543,6 +544,7 @@ export default function App() {
     const [playCardSpirit, setPlayCardSpirit] = useState<SpiritWithAspects | null>(null)
     const [playCardAspect, setPlayCardAspect] = useState<string | null>(null)
     const [playCardAspectPreview, setPlayCardAspectPreview] = useState<string | null>(null)
+    const [playCardUniquePreview, setPlayCardUniquePreview] = useState<string | null>(null)
     const [isPlayCardFlipped, setIsPlayCardFlipped] = useState(false)
     const [playCardFrontUrlIndex, setPlayCardFrontUrlIndex] = useState(0)
     const [playCardBackUrlIndex, setPlayCardBackUrlIndex] = useState(0)
@@ -755,6 +757,13 @@ export default function App() {
     const playCardAspectPreviewEntry = playCardAspectPreview
         ? (LOCAL_ASPECT_CARDS_BY_NAME[playCardAspectPreview] ?? null)
         : null
+    const playCardUniqueEntries = useMemo(
+        () => (playCardSpirit ? (LOCAL_UNIQUE_POWER_CARDS_BY_SPIRIT[playCardSpirit.name] ?? []) : []),
+        [playCardSpirit]
+    )
+    const playCardUniquePreviewEntry = playCardUniqueEntries.find(
+        (card) => card.image === playCardUniquePreview
+    )
     const hasLocalPlayCardForSpirit = (spirit: SpiritWithAspects) =>
         Boolean(LOCAL_PLAY_CARDS_BY_SPIRIT[spirit.name])
 
@@ -799,6 +808,7 @@ export default function App() {
         setPlayCardSpirit(spirit)
         setPlayCardAspect(aspect)
         setPlayCardAspectPreview(aspect)
+        setPlayCardUniquePreview(null)
         setIsPlayCardFlipped(true)
         setPlayCardFrontUrlIndex(0)
         setPlayCardBackUrlIndex(0)
@@ -808,6 +818,7 @@ export default function App() {
         setPlayCardSpirit(null)
         setPlayCardAspect(null)
         setPlayCardAspectPreview(null)
+        setPlayCardUniquePreview(null)
         setIsPlayCardFlipped(false)
     }
 
@@ -2968,6 +2979,67 @@ export default function App() {
                                         ) : (
                                             <p className='text-center text-sm text-slate-500'>
                                                 Aspect card image not available.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {playCardUniqueEntries.length > 0 && (
+                            <div className='w-full space-y-2 pt-2'>
+                                <p className='text-sm text-slate-300 text-center'>
+                                    Unique Power Cards ({playCardUniqueEntries.length})
+                                </p>
+                                <div className='flex justify-center gap-3 overflow-x-auto pb-2 custom-scrollbar'>
+                                    {playCardUniqueEntries.map((card) => (
+                                        <button
+                                            key={card.image}
+                                            type='button'
+                                            onClick={() =>
+                                                setPlayCardUniquePreview((current) =>
+                                                    current === card.image ? null : card.image
+                                                )
+                                            }
+                                            className={`shrink-0 w-40 ${
+                                                playCardUniquePreview === card.image
+                                                    ? 'ring-2 ring-primary rounded-lg'
+                                                    : ''
+                                            }`}>
+                                            <img
+                                                src={card.image}
+                                                alt={`${card.name} unique power card`}
+                                                className='w-full aspect-[742/1039] object-contain'
+                                                referrerPolicy='no-referrer'
+                                            />
+                                            <p className='text-[11px] text-slate-300 text-center mt-1'>
+                                                {card.name}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                                {playCardUniquePreview && (
+                                    <div className='mx-auto w-full max-w-xl space-y-2'>
+                                        <p className='text-sm text-slate-300 text-center'>
+                                            Enlarged Unique Card:{' '}
+                                            <span className='font-semibold text-white'>
+                                                {playCardUniquePreviewEntry?.name ?? 'Selected Card'}
+                                            </span>
+                                        </p>
+                                        {playCardUniquePreviewEntry ? (
+                                            <button
+                                                type='button'
+                                                onClick={() => setPlayCardUniquePreview(null)}
+                                                className='mx-auto block w-full'>
+                                                <img
+                                                    src={playCardUniquePreviewEntry.image}
+                                                    alt={`${playCardUniquePreview} enlarged unique power card`}
+                                                    className='w-full aspect-[742/1039] object-contain'
+                                                    referrerPolicy='no-referrer'
+                                                />
+                                            </button>
+                                        ) : (
+                                            <p className='text-center text-sm text-slate-500'>
+                                                Unique card image not available.
                                             </p>
                                         )}
                                     </div>
