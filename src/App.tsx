@@ -170,6 +170,43 @@ const getSpiritPlayCardCandidates = (spiritName: string, side: 'Front' | 'Back')
     return [side === 'Front' ? entry.front : entry.back]
 }
 
+const LOCAL_ASPECT_CARDS_BY_NAME: Record<string, { front: string; back: string }> = {
+    'Pandemonium': { front: '/aspects/tts/pandemonium-front.jpg', back: '/aspects/tts/pandemonium-back.jpg' },
+    'Wind': { front: '/aspects/tts/wind-front.jpg', back: '/aspects/tts/wind-back.jpg' },
+    'Immense': { front: '/aspects/tts/immense-front.jpg', back: '/aspects/tts/immense-back.jpg' },
+    'Sparking': { front: '/aspects/tts/sparking-front.jpg', back: '/aspects/tts/sparking-back.jpg' },
+    'Sunshine': { front: '/aspects/tts/sunshine-front.jpg', back: '/aspects/tts/sunshine-back.jpg' },
+    'Travel': { front: '/aspects/tts/travel-front.jpg', back: '/aspects/tts/travel-back.jpg' },
+    'Haven': { front: '/aspects/tts/haven-front.jpg', back: '/aspects/tts/haven-back.jpg' },
+    'Madness': { front: '/aspects/tts/madness-front.jpg', back: '/aspects/tts/madness-back.jpg' },
+    'Reach': { front: '/aspects/tts/reach-front.jpg', back: '/aspects/tts/reach-back.jpg' },
+    'Amorphous': { front: '/aspects/tts/amorphous-front.jpg', back: '/aspects/tts/amorphous-back.jpg' },
+    'Foreboding': { front: '/aspects/tts/foreboding-front.jpg', back: '/aspects/tts/foreboding-back.jpg' },
+    'Dark Fire': { front: '/aspects/tts/dark-fire-front.jpg', back: '/aspects/tts/dark-fire-back.jpg' },
+    'Unconstrained': { front: '/aspects/tts/unconstrained-front.jpg', back: '/aspects/tts/unconstrained-back.jpg' },
+    'Encircle': { front: '/aspects/tts/encircle-front.jpg', back: '/aspects/tts/encircle-back.jpg' },
+    'Resilience': { front: '/aspects/tts/resilience-front.jpg', back: '/aspects/tts/resilience-back.jpg' },
+    'Might': { front: '/aspects/tts/might-front.jpg', back: '/aspects/tts/might-back.jpg' },
+    'Nourishing': { front: '/aspects/tts/nourishing-front.jpg', back: '/aspects/tts/nourishing-back.jpg' },
+    'Tangles': { front: '/aspects/tts/tangles-front.jpg', back: '/aspects/tts/tangles-back.jpg' },
+    'Regrowth': { front: '/aspects/tts/regrowth-front.jpg', back: '/aspects/tts/regrowth-back.jpg' },
+    'Tactician': { front: '/aspects/tts/tactician-front.jpg', back: '/aspects/tts/tactician-back.jpg' },
+    'Warrior': { front: '/aspects/tts/warrior-front.jpg', back: '/aspects/tts/warrior-back.jpg' },
+    'Enticing': { front: '/aspects/tts/enticing-front.jpg', back: '/aspects/tts/enticing-back.jpg' },
+    'Violence': { front: '/aspects/tts/violence-front.jpg', back: '/aspects/tts/violence-back.jpg' },
+    'Deeps': { front: '/aspects/tts/deeps-front.jpg', back: '/aspects/tts/deeps-back.jpg' },
+    'Spreading Hostility': {
+        front: '/aspects/tts/spreading-hostility-front.jpg',
+        back: '/aspects/tts/spreading-hostility-back.jpg'
+    },
+    'Transforming': { front: '/aspects/tts/transforming-front.jpg', back: '/aspects/tts/transforming-back.jpg' },
+    'Locus': { front: '/aspects/tts/locus-front.jpg', back: '/aspects/tts/locus-back.jpg' },
+    'Lair': { front: '/aspects/tts/lair-front.jpg', back: '/aspects/tts/lair-back.jpg' },
+    'Stranded': { front: '/aspects/tts/stranded-front.jpg', back: '/aspects/tts/stranded-back.jpg' },
+    'Intensify': { front: '/aspects/tts/intensify-front.jpg', back: '/aspects/tts/intensify-back.jpg' },
+    'Mentor': { front: '/aspects/tts/mentor-front.jpg', back: '/aspects/tts/mentor-back.jpg' }
+}
+
 // --- Data ---
 const SPIRIT_ASPECTS: Record<string, string[]> = {
     'A Spread of Rampant Green': ['Regrowth', 'Tangles'],
@@ -504,6 +541,8 @@ export default function App() {
     const [showModal, setShowModal] = useState(false)
     const [showSpiritHistoryModal, setShowSpiritHistoryModal] = useState(false)
     const [playCardSpirit, setPlayCardSpirit] = useState<SpiritWithAspects | null>(null)
+    const [playCardAspect, setPlayCardAspect] = useState<string | null>(null)
+    const [playCardAspectPreview, setPlayCardAspectPreview] = useState<string | null>(null)
     const [isPlayCardFlipped, setIsPlayCardFlipped] = useState(false)
     const [playCardFrontUrlIndex, setPlayCardFrontUrlIndex] = useState(0)
     const [playCardBackUrlIndex, setPlayCardBackUrlIndex] = useState(0)
@@ -697,6 +736,25 @@ export default function App() {
 
     const playCardFrontUrl = playCardFrontCandidates[playCardFrontUrlIndex] ?? null
     const playCardBackUrl = playCardBackCandidates[playCardBackUrlIndex] ?? null
+    const playCardAspectEntries = useMemo(() => {
+        if (!playCardSpirit) return []
+        const spiritAspects =
+            playCardSpirit.aspects && playCardSpirit.aspects.length > 0
+                ? playCardSpirit.aspects
+                : (SPIRIT_ASPECTS[playCardSpirit.name] ?? [])
+        const entries = spiritAspects.map((aspectName) => ({
+            name: aspectName,
+            entry: LOCAL_ASPECT_CARDS_BY_NAME[aspectName] ?? null
+        }))
+
+        if (!playCardAspect) return entries
+        return entries.sort((a, b) =>
+            a.name === playCardAspect ? -1 : b.name === playCardAspect ? 1 : 0
+        )
+    }, [playCardSpirit, playCardAspect])
+    const playCardAspectPreviewEntry = playCardAspectPreview
+        ? (LOCAL_ASPECT_CARDS_BY_NAME[playCardAspectPreview] ?? null)
+        : null
     const hasLocalPlayCardForSpirit = (spirit: SpiritWithAspects) =>
         Boolean(LOCAL_PLAY_CARDS_BY_SPIRIT[spirit.name])
 
@@ -737,8 +795,10 @@ export default function App() {
         setHistory((prev) => [newEntry, ...prev].slice(0, 20))
     }
 
-    const openSpiritPlayCardModal = (spirit: SpiritWithAspects) => {
+    const openSpiritPlayCardModal = (spirit: SpiritWithAspects, aspect: string | null = null) => {
         setPlayCardSpirit(spirit)
+        setPlayCardAspect(aspect)
+        setPlayCardAspectPreview(aspect)
         setIsPlayCardFlipped(true)
         setPlayCardFrontUrlIndex(0)
         setPlayCardBackUrlIndex(0)
@@ -746,6 +806,8 @@ export default function App() {
 
     const closeSpiritPlayCardModal = () => {
         setPlayCardSpirit(null)
+        setPlayCardAspect(null)
+        setPlayCardAspectPreview(null)
         setIsPlayCardFlipped(false)
     }
 
@@ -1992,7 +2054,10 @@ export default function App() {
                                                     type='button'
                                                     onClick={() => {
                                                         if (hasLocalPlayCardForSpirit(selection.spirit!)) {
-                                                            openSpiritPlayCardModal(selection.spirit!)
+                                                            openSpiritPlayCardModal(
+                                                                selection.spirit!,
+                                                                selection.aspect
+                                                            )
                                                         }
                                                     }}
                                                     disabled={!hasLocalPlayCardForSpirit(selection.spirit)}
@@ -2764,7 +2829,7 @@ export default function App() {
                         spirit={pickedSpirit}
                         selectedAspect={selectedAspect}
                         showViewPlayCard={hasLocalPlayCardForSpirit(pickedSpirit)}
-                        onViewPlayCard={() => openSpiritPlayCardModal(pickedSpirit)}
+                        onViewPlayCard={() => openSpiritPlayCardModal(pickedSpirit, selectedAspect)}
                         onSelectAspect={updateSelectedAspect}
                         onConfirm={() => setShowModal(false)}
                         confirmLabel='Confirm Selection'
@@ -2780,7 +2845,7 @@ export default function App() {
                 maxWidthClass='max-w-6xl'
                 zIndexClass='z-[70]'>
                 {playCardSpirit && (
-                    <div className='p-6 md:p-8 space-y-5'>
+                    <div className='p-6 md:p-8 space-y-5 max-h-[88vh] overflow-y-auto custom-scrollbar'>
                         <div className='pr-12'>
                             <h2 className='text-xl md:text-2xl font-bold text-white'>{playCardSpirit.name}</h2>
                             <p className='text-sm text-slate-400 mt-1'>
@@ -2842,6 +2907,73 @@ export default function App() {
                                 </div>
                             </button>
                         </div>
+                        {playCardAspectEntries.length > 0 && (
+                            <div className='w-full space-y-2 pt-2'>
+                                <p className='text-sm text-slate-300 text-center'>
+                                    Aspects ({playCardAspectEntries.length})
+                                </p>
+                                <div className='flex justify-center gap-3 overflow-x-auto pb-2 custom-scrollbar'>
+                                    {playCardAspectEntries.map((aspect) => (
+                                        <button
+                                            key={aspect.name}
+                                            type='button'
+                                            onClick={() =>
+                                                setPlayCardAspectPreview((current) =>
+                                                    current === aspect.name ? null : aspect.name
+                                                )
+                                            }
+                                            className={`shrink-0 w-40 ${
+                                                playCardAspectPreview === aspect.name
+                                                    ? 'ring-2 ring-primary rounded-lg'
+                                                    : ''
+                                            }`}>
+                                            {aspect.entry ? (
+                                                <img
+                                                    src={aspect.entry.front}
+                                                    alt={`${aspect.name} aspect card`}
+                                                    className='w-full aspect-[742/1039] object-contain'
+                                                    referrerPolicy='no-referrer'
+                                                />
+                                            ) : (
+                                                <div className='w-full aspect-[742/1039] rounded border border-slate-700/70 bg-slate-900/60 grid place-items-center px-2 text-center text-[11px] text-slate-400'>
+                                                    No local image
+                                                </div>
+                                            )}
+                                            <p className='text-[11px] text-slate-300 text-center mt-1'>
+                                                {aspect.name}
+                                            </p>
+                                        </button>
+                                    ))}
+                                </div>
+                                {playCardAspectPreview && (
+                                    <div className='mx-auto w-full max-w-xl space-y-2'>
+                                        <p className='text-sm text-slate-300 text-center'>
+                                            Enlarged Aspect:{' '}
+                                            <span className='font-semibold text-white'>
+                                                {playCardAspectPreview}
+                                            </span>
+                                        </p>
+                                        {playCardAspectPreviewEntry ? (
+                                            <button
+                                                type='button'
+                                                onClick={() => setPlayCardAspectPreview(null)}
+                                                className='mx-auto block w-full'>
+                                                <img
+                                                    src={playCardAspectPreviewEntry.front}
+                                                    alt={`${playCardAspectPreview} enlarged aspect card`}
+                                                    className='w-full aspect-[742/1039] object-contain'
+                                                    referrerPolicy='no-referrer'
+                                                />
+                                            </button>
+                                        ) : (
+                                            <p className='text-center text-sm text-slate-500'>
+                                                Aspect card image not available.
+                                            </p>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
                 )}
             </ModalShell>
@@ -2875,7 +3007,12 @@ export default function App() {
                                                 }))
                                             }
                                             showViewPlayCard={hasLocalPlayCardForSpirit(candidate)}
-                                            onViewPlayCard={() => openSpiritPlayCardModal(candidate)}
+                                            onViewPlayCard={() =>
+                                                openSpiritPlayCardModal(
+                                                    candidate,
+                                                    gameCandidateAspects[candidate.id] ?? null
+                                                )
+                                            }
                                             onConfirm={() => confirmGameCandidateSelection(candidate)}
                                             confirmLabel='Confirm This Spirit'
                                             footerText={`Selected: ${gameCandidateAspects[candidate.id] ?? 'No Aspect'}`}
@@ -3026,7 +3163,12 @@ export default function App() {
                                                 }))
                                             }
                                             showViewPlayCard={hasLocalPlayCardForSpirit(spirit)}
-                                            onViewPlayCard={() => openSpiritPlayCardModal(spirit)}
+                                            onViewPlayCard={() =>
+                                                openSpiritPlayCardModal(
+                                                    spirit,
+                                                    gameSpiritPickerAspects[spirit.id] ?? null
+                                                )
+                                            }
                                             onConfirm={() => confirmGameSpiritPickerSelection(spirit)}
                                             confirmDisabled={isPickedByAnotherPlayer}
                                             confirmLabel={isPickedByAnotherPlayer ? 'Picked' : 'Confirm This Spirit'}
