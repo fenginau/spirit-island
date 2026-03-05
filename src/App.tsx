@@ -14,6 +14,7 @@ import {
     Sparkles,
     Shield,
     Swords,
+    BookOpen,
     ChevronLeft,
     ChevronRight
 } from 'lucide-react'
@@ -34,6 +35,7 @@ import ModalShell from './components/ModalShell'
 import SpiritDisplayCard from './components/SpiritDisplayCard'
 import ScoreBadge from './components/ScoreBadge'
 import { LOCAL_UNIQUE_POWER_CARDS_BY_SPIRIT } from './data/uniquePowerCards'
+import { WIKI_CARD_DATA, type WikiCardItem, type WikiSection } from './data/wikiCards'
 
 const GOOGLE_AI_API_KEY = 'AIzaSyDIrZfjGbBmDVjuEi-5MI5zaEdkV5gfLtc'
 const getDefaultPlayerName = (player: number) => `Player ${player}`
@@ -169,6 +171,73 @@ const getSpiritPlayCardCandidates = (spiritName: string, side: 'Front' | 'Back')
     const entry = LOCAL_PLAY_CARDS_BY_SPIRIT[spiritName]
     if (!entry) return []
     return [side === 'Front' ? entry.front : entry.back]
+}
+
+const getWikiCardPair = (cards: WikiCardItem[], card: WikiCardItem) => {
+    const image = card.image
+    const frontImageFromPath = image.replace(/-back(\.[a-z0-9]+)$/i, '-front$1')
+    const backImageFromPath = image.replace(/-front(\.[a-z0-9]+)$/i, '-back$1')
+    const frontNameFromTitle = card.name.replace(/\s+Back$/i, ' Front')
+    const backNameFromTitle = card.name.replace(/\s+Front$/i, ' Back')
+
+    let front = card
+    let back: WikiCardItem | null = null
+
+    if (/-front\.[a-z0-9]+$/i.test(image)) {
+        const paired = cards.find((item) => item.image === backImageFromPath)
+        if (paired) {
+            back = paired
+        } else {
+            back = { name: backNameFromTitle, image: backImageFromPath }
+        }
+    } else if (/-back\.[a-z0-9]+$/i.test(image)) {
+        const paired = cards.find((item) => item.image === frontImageFromPath)
+        if (paired) {
+            front = paired
+            back = card
+        } else {
+            front = { name: frontNameFromTitle, image: frontImageFromPath }
+            back = card
+        }
+    } else if (/\s+front$/i.test(card.name)) {
+        const paired = cards.find((item) => item.name.toLowerCase() === backNameFromTitle.toLowerCase())
+        if (paired) {
+            back = paired
+        }
+    } else if (/\s+back$/i.test(card.name)) {
+        const paired = cards.find(
+            (item) => item.name.toLowerCase() === frontNameFromTitle.toLowerCase()
+        )
+        if (paired) {
+            front = paired
+            back = card
+        } else {
+            front = { name: frontNameFromTitle, image: frontImageFromPath }
+            back = card
+        }
+    }
+
+    return { front, back, hasTwoSides: !!back }
+}
+
+const WIKI_SECTION_LABELS: Record<WikiSection, string> = {
+    major: 'Major Power Cards',
+    minor: 'Minor Power Cards',
+    fear: 'Fear Cards',
+    event: 'Event Cards',
+    invader: 'Invader Cards',
+    adversary: 'Adversary'
+}
+
+const LOCAL_ADVERSARY_FRONT_CARD_BY_NAME: Record<string, string> = {
+    'Brandenburg-Prussia': '/wiki-cards/tts/adversary/brandenburg-prussia-front.jpg',
+    'England': '/wiki-cards/tts/adversary/england-front.jpg',
+    'Sweden': '/wiki-cards/tts/adversary/sweden-front.jpg',
+    'France': '/wiki-cards/tts/adversary/france-front.jpg',
+    'Habsburg Monarchy (Livestock Colony)': '/wiki-cards/tts/adversary/habsburg-livestock-front.jpg',
+    'Russia': '/wiki-cards/tts/adversary/russia-front.jpg',
+    'Scotland': '/wiki-cards/tts/adversary/scotland-front.jpg',
+    'Habsburg Mining Expedition': '/wiki-cards/tts/adversary/habsburg-mining-front.jpg'
 }
 
 const LOCAL_ASPECT_CARDS_BY_NAME: Record<string, { front: string; back: string }> = {
@@ -582,6 +651,10 @@ export default function App() {
     const [scoreInvaderNotInDeck, setScoreInvaderNotInDeck] = useState(0)
     const [scoreLivingDahan, setScoreLivingDahan] = useState(0)
     const [scoreBlight, setScoreBlight] = useState(0)
+    const [wikiSection, setWikiSection] = useState<WikiSection>('major')
+    const [wikiCardSearch, setWikiCardSearch] = useState('')
+    const [wikiSelectedCard, setWikiSelectedCard] = useState<WikiCardItem | null>(null)
+    const [isWikiCardFlipped, setIsWikiCardFlipped] = useState(false)
     const [isAiComposing, setIsAiComposing] = useState(false)
     const [isStartingGame, setIsStartingGame] = useState(false)
     const [isDownloadingGameImage, setIsDownloadingGameImage] = useState(false)
@@ -880,6 +953,19 @@ export default function App() {
             (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )
     }, [games, gamesSortBy])
+
+    const wikiCards = useMemo(() => WIKI_CARD_DATA[wikiSection] ?? [], [wikiSection])
+    const wikiVisibleCards = useMemo(() => {
+        const supportsSearch = wikiSection === 'major' || wikiSection === 'minor'
+        if (!supportsSearch) return wikiCards
+        const query = wikiCardSearch.trim().toLowerCase()
+        if (!query) return wikiCards
+        return wikiCards.filter((card) => card.name.toLowerCase().includes(query))
+    }, [wikiCards, wikiCardSearch, wikiSection])
+    const wikiCardPair = useMemo(
+        () => (wikiSelectedCard ? getWikiCardPair(wikiCards, wikiSelectedCard) : null),
+        [wikiCards, wikiSelectedCard]
+    )
 
     const getWizardPlayerLabel = (player: number) =>
         gameSelections.find((selection) => selection.player === player)?.playerName?.trim() ||
@@ -1858,6 +1944,93 @@ export default function App() {
                     </>
                 )}
 
+                {activeTab === 'wiki' && (
+                    <section className='space-y-5'>
+                        <section className='glass-panel p-6 rounded-2xl shadow-xl space-y-4'>
+                            <h2 className='text-xl font-bold text-slate-100 flex items-center gap-2'>
+                                <BookOpen className='text-primary' size={20} />
+                                Wiki
+                            </h2>
+                            <p className='text-sm text-slate-400'>
+                                Browse card references from the same online-backed archive source.
+                            </p>
+                            <div className='flex flex-wrap gap-2'>
+                                {(Object.keys(WIKI_SECTION_LABELS) as WikiSection[]).map((section) => (
+                                    <button
+                                        key={section}
+                                        onClick={() => {
+                                            setWikiSection(section)
+                                            setWikiSelectedCard(null)
+                                            setIsWikiCardFlipped(false)
+                                            setWikiCardSearch('')
+                                        }}
+                                        className={`px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                                            wikiSection === section
+                                                ? 'bg-primary border-primary text-white'
+                                                : 'border-slate-600 text-slate-300 hover:border-primary/60'
+                                        }`}>
+                                        {WIKI_SECTION_LABELS[section]}
+                                    </button>
+                                ))}
+                            </div>
+                        </section>
+
+                        <section className='glass-panel p-6 rounded-2xl shadow-xl space-y-4'>
+                            <div className='flex items-center justify-between gap-3'>
+                                <h3 className='text-lg font-bold text-slate-100'>
+                                    {WIKI_SECTION_LABELS[wikiSection]}
+                                </h3>
+                                <p className='text-xs text-slate-400'>{wikiVisibleCards.length} cards</p>
+                            </div>
+                            {(wikiSection === 'major' || wikiSection === 'minor') && (
+                                <input
+                                    type='text'
+                                    value={wikiCardSearch}
+                                    onChange={(e) => setWikiCardSearch(e.target.value)}
+                                    placeholder='Search by card name...'
+                                    className='w-full bg-slate-900 border border-slate-700 rounded-xl px-4 py-3 text-slate-100'
+                                />
+                            )}
+
+                            {wikiVisibleCards.length > 0 ? (
+                                <div className='space-y-4'>
+                                    <div className='max-h-[58vh] overflow-y-auto custom-scrollbar pr-2'>
+                                        <div className='grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3'>
+                                            {wikiVisibleCards.map((card) => (
+                                                <button
+                                                    key={card.image}
+                                                    onClick={() => {
+                                                        setWikiSelectedCard(card)
+                                                        setIsWikiCardFlipped(false)
+                                                    }}
+                                                    className={`rounded-xl p-2 border text-left transition-colors ${
+                                                        wikiSelectedCard?.image === card.image
+                                                            ? 'border-primary bg-primary/10'
+                                                            : 'border-slate-700 bg-slate-900/40 hover:border-primary/50'
+                                                    }`}>
+                                                    <img
+                                                        src={card.image}
+                                                        alt={card.name}
+                                                        className='w-full aspect-[742/1039] object-contain rounded'
+                                                        referrerPolicy='no-referrer'
+                                                    />
+                                                    <p className='text-[11px] text-slate-300 mt-2 line-clamp-2'>
+                                                        {card.name}
+                                                    </p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <p className='text-slate-500 italic'>
+                                    No cards found for this category.
+                                </p>
+                            )}
+                        </section>
+                    </section>
+                )}
+
                 {activeTab === 'games' && (
                     <>
                         {gamesScreen === 'landing' && (
@@ -2565,6 +2738,16 @@ export default function App() {
                                         <p className='text-sm text-slate-400'>
                                             Difficulty Range: {gameAdversary.difficultyRange}
                                         </p>
+                                        {LOCAL_ADVERSARY_FRONT_CARD_BY_NAME[gameAdversary.name] && (
+                                            <div className='w-full'>
+                                                <img
+                                                    src={LOCAL_ADVERSARY_FRONT_CARD_BY_NAME[gameAdversary.name]}
+                                                    alt={`${gameAdversary.name} adversary card front`}
+                                                    className='w-full h-auto object-contain rounded-lg'
+                                                    referrerPolicy='no-referrer'
+                                                />
+                                            </div>
+                                        )}
                                         <label className='space-y-2 block'>
                                             <span className='text-xs font-bold uppercase tracking-widest text-slate-400'>
                                                 Level
@@ -2725,26 +2908,6 @@ export default function App() {
                 <div className='max-w-4xl mx-auto'>
                     <div className='glass-panel rounded-2xl border border-slate-700/60 bg-slate-900/90 backdrop-blur-md p-2 grid grid-cols-3 gap-2 shadow-2xl'>
                         <button
-                            onClick={() => setActiveTab('spirits')}
-                            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-colors ${
-                                activeTab === 'spirits'
-                                    ? 'bg-primary text-white'
-                                    : 'text-slate-300 hover:bg-slate-800'
-                            }`}>
-                            <Sparkles size={16} />
-                            Spirits
-                        </button>
-                        <button
-                            onClick={() => setActiveTab('adversary')}
-                            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-colors ${
-                                activeTab === 'adversary'
-                                    ? 'bg-primary text-white'
-                                    : 'text-slate-300 hover:bg-slate-800'
-                            }`}>
-                            <Shield size={16} />
-                            Adversary
-                        </button>
-                        <button
                             onClick={() => {
                                 setActiveTab('games')
                                 setGamesScreen('landing')
@@ -2756,6 +2919,26 @@ export default function App() {
                             }`}>
                             <Swords size={16} />
                             Games
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('spirits')}
+                            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-colors ${
+                                activeTab === 'spirits'
+                                    ? 'bg-primary text-white'
+                                    : 'text-slate-300 hover:bg-slate-800'
+                            }`}>
+                            <Sparkles size={16} />
+                            Spirits
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('wiki')}
+                            className={`flex items-center justify-center gap-2 rounded-xl py-3 text-sm font-semibold transition-colors ${
+                                activeTab === 'wiki'
+                                    ? 'bg-primary text-white'
+                                    : 'text-slate-300 hover:bg-slate-800'
+                            }`}>
+                            <BookOpen size={16} />
+                            Wiki
                         </button>
                     </div>
                 </div>
@@ -2831,6 +3014,70 @@ export default function App() {
                         </AnimatePresence>
                     </div>
                 </div>
+            </ModalShell>
+
+            {/* Wiki Card Modal */}
+            <ModalShell
+                open={!!wikiSelectedCard}
+                onClose={() => {
+                    setWikiSelectedCard(null)
+                    setIsWikiCardFlipped(false)
+                }}
+                maxWidthClass='max-w-5xl'
+                zIndexClass='z-[70]'>
+                {wikiSelectedCard && wikiCardPair && (
+                    <div className='p-6 md:p-8 space-y-4'>
+                        <div className='pr-12'>
+                            <h2 className='text-xl md:text-2xl font-bold text-white'>
+                                {wikiCardPair.front.name.replace(/\s+Front$/i, '')}
+                            </h2>
+                            {wikiCardPair.hasTwoSides && (
+                                <p className='text-sm text-slate-400 mt-1'>
+                                    Click the card to flip between front and back.
+                                </p>
+                            )}
+                        </div>
+                        <div className='mx-auto w-full max-w-xl [perspective:1400px]'>
+                            <button
+                                type='button'
+                                onClick={() => {
+                                    if (wikiCardPair.hasTwoSides) {
+                                        setIsWikiCardFlipped((prev) => !prev)
+                                    }
+                                }}
+                                className={`w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/70 ${
+                                    wikiCardPair.hasTwoSides ? 'cursor-pointer' : 'cursor-default'
+                                }`}>
+                                <div
+                                    className='relative aspect-[742/1039] w-full transition-transform duration-700 [transform-style:preserve-3d]'
+                                    style={{
+                                        transform: isWikiCardFlipped
+                                            ? 'rotateY(180deg)'
+                                            : 'rotateY(0deg)'
+                                    }}>
+                                    <div className='absolute inset-0 rounded-2xl overflow-hidden [backface-visibility:hidden]'>
+                                        <img
+                                            src={wikiCardPair.front.image}
+                                            alt={`${wikiCardPair.front.name} front`}
+                                            className='h-full w-full object-contain'
+                                            referrerPolicy='no-referrer'
+                                        />
+                                    </div>
+                                    {wikiCardPair.back && (
+                                        <div className='absolute inset-0 rounded-2xl overflow-hidden [backface-visibility:hidden] [transform:rotateY(180deg)]'>
+                                            <img
+                                                src={wikiCardPair.back.image}
+                                                alt={`${wikiCardPair.back.name} back`}
+                                                className='h-full w-full object-contain'
+                                                referrerPolicy='no-referrer'
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+                            </button>
+                        </div>
+                    </div>
+                )}
             </ModalShell>
 
             {/* Spirit Result Modal */}

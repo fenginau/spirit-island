@@ -64,4 +64,4 @@ export interface GameRecord {
     score: GameScore | null
 }
 
-export type AppTab = 'spirits' | 'adversary' | 'games'
+export type AppTab = 'spirits' | 'adversary' | 'games' | 'wiki'
