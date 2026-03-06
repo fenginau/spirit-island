@@ -226,6 +226,8 @@ const WIKI_SECTION_LABELS: Record<WikiSection, string> = {
     fear: 'Fear Cards',
     event: 'Event Cards',
     invader: 'Invader Cards',
+    scenario: 'Scenario Cards',
+    blight: 'Blight Cards',
     adversary: 'Adversary'
 }
 
